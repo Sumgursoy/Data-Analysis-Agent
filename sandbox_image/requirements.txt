@@ -1,0 +1,31 @@
+# Sandbox container'ının içine kurulanlar.
+# DİKKAT: openai, fastapi, httpx, docker BURAYA GİRMEZ.
+# Container'ın interneti yok ve LLM ile konuşmuyor — sadece kod çalıştırıyor.
+
+# Veri
+# pandas 3.x'e ÇIKMA — gerekçe backend/requirements.txt'te.
+# İki dosya aynı aralıkta kalmalı: sandbox ile backend'in pandas
+# davranışı ayrışırsa şema kartı ile agent'ın gördüğü veri uyuşmaz.
+pandas>=2.2,<3
+numpy>=2.0.0
+pyarrow>=18.0.0
+duckdb>=1.1.0
+
+# İstatistik / modelleme
+scipy>=1.14.0
+statsmodels>=0.14.0
+scikit-learn>=1.5.0
+
+# Grafik
+matplotlib>=3.9.0
+
+# Dosya formatları — agent ham dosyayı kendi okumak isterse
+openpyxl>=3.1.0
+xlrd>=2.0.1
+pyxlsb>=1.0.10
+odfpy>=1.4.1
+
+# Parsing — agent kendi parser'ını yazarsa (kaçış kapısı)
+lxml>=5.3.0
+selectolax>=0.3.21
+pdfplumber>=0.11.0

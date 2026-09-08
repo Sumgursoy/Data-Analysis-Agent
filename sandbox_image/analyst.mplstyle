@@ -1,0 +1,58 @@
+# Agent'ın ürettiği tüm grafikler için tek stil.
+#
+# Neden: her grafiği model sıfırdan biçimlendirirse çıktı dağınık olur —
+# biri gri, biri renkli, biri ızgaralı. Jüri sunumunda tutarlı görünüm
+# ciddi fark yaratıyor. Model sadece veriyi çizer, görünüm buradan gelir.
+
+# Türkçe karakterler (ş ğ İ ı ç ö ü) için DejaVu — imajda kurulu.
+font.family:          DejaVu Sans
+font.size:            10
+axes.titlesize:       12.5
+axes.titleweight:     600
+axes.labelsize:       10
+axes.labelcolor:      3a4048
+xtick.labelsize:      9
+ytick.labelsize:      9
+legend.fontsize:      9
+
+figure.figsize:       8, 4.6
+figure.dpi:           110
+savefig.dpi:          130
+savefig.bbox:         tight
+savefig.pad_inches:   0.25
+figure.facecolor:     white
+savefig.facecolor:    white
+
+axes.facecolor:       white
+axes.edgecolor:       d8dde3
+axes.linewidth:       0.9
+axes.grid:            True
+axes.grid.axis:       y
+axes.axisbelow:       True
+grid.color:           eef1f4
+grid.linewidth:       0.9
+
+axes.spines.top:      False
+axes.spines.right:    False
+
+# Çubuk üstündeki değer etiketleri sınıra değmesin.
+axes.ymargin:         0.14
+
+# "1e6" gibi bilimsel gösterim çıkmasın — jüri okunaklı sayı görsün.
+axes.formatter.useoffset:    False
+axes.formatter.limits:       -7, 10
+
+xtick.color:          6b7280
+ytick.color:          6b7280
+xtick.direction:      out
+ytick.direction:      out
+
+lines.linewidth:      2.0
+lines.markersize:     5
+patch.edgecolor:      white
+patch.linewidth:      0.5
+
+legend.frameon:       False
+
+# Renk dizisi — kategorik veri için ayırt edilebilir, baskıda da okunur.
+axes.prop_cycle: cycler('color', ['1f6feb', 'e8710a', '1a7f4b', 'c0392b', '7c3aed', '0891b2', 'a16207', 'be185d'])

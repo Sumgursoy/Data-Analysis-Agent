@@ -1,0 +1,54 @@
+# ─── Web ───────────────────────────────────────────────────────
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-multipart>=0.0.12
+python-dotenv>=1.0.0
+pydantic>=2.9.0
+
+# ─── LLM ───────────────────────────────────────────────────────
+openai>=2.11.0
+
+# ─── Veri motoru ───────────────────────────────────────────────
+# Ingest backend'de koşuyor, bu yüzden veri kütüphaneleri burada da lazım.
+duckdb>=1.1.0
+# pandas 3.x'e ÇIKMA. Agent sürekli pandas kodu yazıyor ve modellerin
+# pandas akıcılığı 2.x üzerine kurulu; 3.0'da applymap kaldırıldı,
+# inplace= gitti, copy-on-write ve string dtype değişti. Her uyumsuzluk
+# hata → düzeltme döngüsü demek: iterasyon ve demo saniyesi yakar.
+# sandbox_image/requirements.txt ile AYNI aralıkta kalmalı.
+pandas>=2.2,<3
+numpy>=2.0.0
+pyarrow>=18.0.0
+
+# ─── Dosya formatları ──────────────────────────────────────────
+openpyxl>=3.1.0            # xlsx
+xlrd>=2.0.1                # eski xls
+pyxlsb>=1.0.10             # xlsb
+odfpy>=1.4.1               # ods
+charset-normalizer>=3.4.0  # encoding tespiti (cp1254 / iso-8859-9)
+
+# ─── SQL ───────────────────────────────────────────────────────
+sqlalchemy>=2.0.0
+sqlglot>=25.0.0            # sorguyu parse edip SELECT olduğunu doğrula
+# Sürücüler — hangi DB gelirse onu aç:
+# psycopg[binary]>=3.2.0
+# pymysql>=1.1.0
+# pyodbc>=5.2.0
+
+# ─── Web / scraping (Faz 5) ────────────────────────────────────
+httpx>=0.28.0
+lxml>=5.3.0                # pandas.read_html için
+selectolax>=0.3.21
+trafilatura>=2.0.0
+# playwright>=1.49.0       # JS render gerekince aç: playwright install chromium
+
+# ─── PDF ───────────────────────────────────────────────────────
+pdfplumber>=0.11.0
+
+# ─── Sandbox ───────────────────────────────────────────────────
+docker>=7.1.0
+
+# LocalKernel yedeği aynı kernel_server.py'ı bu venv ile koşturuyor.
+# Docker takılırsa grafik üretimi de çalışsın diye burada da lazımlar.
+matplotlib>=3.9.0
+scipy>=1.14.0

@@ -1,0 +1,7 @@
+# Sadece test için. Üretimde/demoda gerekmez.
+#   pip install -r requirements-dev.txt
+
+-r backend/requirements.txt
+
+# Test PDF'i üretmek için (PDF adaptörünü doğrulamak amacıyla)
+reportlab>=4.2.0
