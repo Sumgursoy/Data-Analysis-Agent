@@ -74,6 +74,8 @@ class DockerKernel(PipeKernel):
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            # Varsayılan 64 KB, kernel'ın üretebileceğinin çok altında (config).
+            limit=config.SANDBOX_PIPE_LIMIT,
         )
 
     async def _cleanup(self) -> None:

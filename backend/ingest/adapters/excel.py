@@ -19,9 +19,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from backend import config
 from backend.ingest.adapters.base import Extracted, UnsupportedSource
-from backend.ingest.normalize import slug
+from backend.ingest.normalize import find_header_row, slug
 
 log = logging.getLogger(__name__)
 
@@ -38,56 +37,6 @@ _TOPLAM_KALIBI = re.compile(
     r"^\s*(genel\s+)?(ara\s+)?(toplam|topalm|total|sum|yekun|yekûn)\s*:?\s*$",
     re.IGNORECASE,
 )
-_SAYI_KALIBI = re.compile(r"^-?[\d\s.,()%₺$€]+$")
-
-
-def _sayi_gibi(deger: object) -> bool:
-    if deger is None or (isinstance(deger, float) and pd.isna(deger)):
-        return False
-    return bool(_SAYI_KALIBI.match(str(deger).strip())) and any(
-        ch.isdigit() for ch in str(deger)
-    )
-
-
-def _basliK_puani(df: pd.DataFrame, r: int) -> float:
-    """Bir satırın başlık satırı olma puanı.
-
-    Başlık satırı: dolu, metinsel, değerleri birbirinden farklı —
-    ve ALTINDAKİ satırlardan tip olarak ayrışıyor (altı sayısal olur).
-    """
-    satir = df.iloc[r]
-    dolu = satir.dropna()
-    genislik = max(len(satir), 1)
-
-    doluluk = len(dolu) / genislik
-    if doluluk < 0.5 or len(dolu) < 2:
-        return -1.0
-
-    metinsellik = sum(1 for v in dolu if not _sayi_gibi(v)) / len(dolu)
-    benzersiz = len({str(v).strip().lower() for v in dolu}) / len(dolu)
-
-    alt = df.iloc[r + 1 : r + 11]
-    alt_sayisallik = 0.0
-    if not alt.empty:
-        hucreler = [v for _, s in alt.items() for v in s.dropna()]
-        if hucreler:
-            alt_sayisallik = sum(1 for v in hucreler if _sayi_gibi(v)) / len(hucreler)
-
-    # Başlık metinsel, altı sayısal → aradaki fark en güçlü sinyal
-    ayrisma = metinsellik - (1 - alt_sayisallik)
-
-    return doluluk * 3 + metinsellik * 2 + benzersiz * 2 + ayrisma * 2
-
-
-def find_header_row(df: pd.DataFrame) -> int:
-    """Başlık satırının indeksi. Bulunamazsa 0."""
-    tarama = min(config.HEADER_SCAN_ROWS, len(df))
-    en_iyi, en_iyi_puan = 0, -1.0
-    for r in range(tarama):
-        puan = _basliK_puani(df, r)
-        if puan > en_iyi_puan:
-            en_iyi, en_iyi_puan = r, puan
-    return en_iyi if en_iyi_puan > 0 else 0
 
 
 def _toplam_satirlari(df: pd.DataFrame) -> pd.Series:

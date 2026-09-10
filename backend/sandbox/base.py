@@ -71,13 +71,28 @@ class PipeKernel(abc.ABC):
                 f"Kernel {READY_TIMEOUT_SEC} saniyede hazır olmadı "
                 f"({type(self).__name__}, session={self.session_id})."
             )
+        except ValueError as e:
+            # Karşılama satırı küçüktür; buraya düşmek kernel'ın protokol dışı
+            # (ör. dev bir traceback) yazdığı anlamına gelir.
+            await self.stop()
+            raise RuntimeError(f"Kernel açılışta protokol dışı çıktı verdi: {e}")
 
         if not line:
             detail = await self._drain_stderr()
             await self.stop()
             raise RuntimeError(f"Kernel açılamadı: {detail or 'çıktı yok'}")
 
-        hello = json.loads(line.decode("utf-8"))
+        try:
+            hello = json.loads(line.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            # Bayat/bozuk imaj ya da stdout'a sızan bir kütüphane çıktısı.
+            # Ham JSONDecodeError yukarı kaçarsa hata mesajı hiçbir şey söylemez.
+            detail = await self._drain_stderr()
+            await self.stop()
+            raise RuntimeError(
+                f"Kernel karşılama satırı okunamadı ({e}). "
+                f"Gelen: {line[:200]!r}" + (f"\nstderr: {detail}" if detail else "")
+            )
 
         # Bayat imaj sessizce yanlış davranır (ör. data_path tanımsız kalır).
         # Açılışta yakala ki demo ortasında ortaya çıkmasın.
@@ -149,6 +164,29 @@ class PipeKernel(abc.ABC):
                 )
                 await self.restart()
                 return ExecResult.timeout(timeout)
+            except ValueError:
+                # Satır boru tamponunu aştı (asyncio LimitOverrunError'ı
+                # ValueError'a sarıyor). config.SANDBOX_PIPE_LIMIT bunu pratikte
+                # imkânsıza yakın kılıyor ama olursa: readline() tamponu
+                # temizliyor, yani kernel'ın durumu belirsiz — sıfırla.
+                #
+                # Modele giden mesaj EYLEME DÖNÜK olmalı. Ham asyncio metni
+                # ("Separator is found, but chunk is longer than limit")
+                # gittiğinde model ne yapacağını çıkaramayıp aynı kodu tekrar
+                # denemişti.
+                log.warning(
+                    "kernel çıktısı boru tamponunu (%.1f MB) aştı — "
+                    "yeniden başlatılıyor (session=%s)",
+                    config.SANDBOX_PIPE_LIMIT / 1024 / 1024,
+                    self.session_id,
+                )
+                await self.restart()
+                return ExecResult.crashed(
+                    "Çıktı çok büyük olduğu için okunamadı; kernel sıfırlandı "
+                    "(tüm değişkenler silindi). Aynı kodu tekrar çalıştırma — "
+                    "daha az yazdır: df.head(20), df.shape, df.describe() "
+                    "kullan, tüm tabloyu print() etme."
+                )
 
             if not line:  # süreç öldü (OOM, kill, çökme)
                 detail = await self._drain_stderr()

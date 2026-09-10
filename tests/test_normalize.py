@@ -90,4 +90,21 @@ esit("bolge kategori", str(tmz["bolge"].dtype), "category")
 esit("bos kolon atildi", "bos_kolon" in tmz.columns, False)
 print("  notlar:", notlar)
 
+
+print("\n── bolunmus sayi: icsel bosluk " + "─" * 30)
+# HATA #31: PDF'te kolon ayrimi sayinin ortasindan gecince "04 152.758" gibi
+# hucreler olusuyor. _TEMIZLE tum bosluklari sildigi icin bu 4.152.758'e
+# donusuyordu — UYDURMA sayi (gercek deger 152.758). Program patlamiyor,
+# kolon `int` gorunuyor, sema karti makul duruyor, sadece rakamlar yanlis.
+esit("bolunmus sayi -> None", N._tek_sayi("04 152.758", ","), None)
+esit("iki sayi tek hucrede -> None", N._tek_sayi("69.354 83.4", ","), None)
+esit("bosluk binlik ayiraci sayilmaz", N._tek_sayi("1 234", ","), None)
+# Saglam degerler bozulmamali — bosluk kirpma hala calisiyor
+esit("para birimi + bosluk", N._tek_sayi("1.234,56 ₺", ","), 1234.56)
+esit("muhasebe negatifi", N._tek_sayi("(1.250)", ","), -1250.0)
+esit("yuzde", N._tek_sayi("%12,5", ","), 12.5)
+# Kolon seviyesinde: bozuk kolon sayiya CEVRILMEMELI, metin kalmali
+esit("bozuk kolon metin kalir",
+     N.to_numeric(pd.Series(["04 152.758", "30 148.410", "9 354.830"])), None)
+
 print(f"\n{'=' * 60}\nGECTI: {gecti}   BASARISIZ: {basarisiz}")

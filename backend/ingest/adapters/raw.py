@@ -96,4 +96,13 @@ def describe_raw(path: Path, location: str) -> str:
         "  → Bu dosya otomatik ayrıştırılamadı. run_python ile kendi parser'ını "
         "yaz; dosya yukarıdaki konumda okunmaya hazır."
     )
+    # Kütüphaneleri BURADA da say. Sistem prompt'unda yazıyor ama kaçış kapısı
+    # metni "parser'ını yaz" derken hangi araçla yazılacağını söylemiyordu:
+    # gerçek turlarda agent PyPDF2 → pypdf → fitz → pdftotext diye deneyip
+    # 9 adımın 4'ünü yalnızca kütüphane aramaya harcadı.
+    satirlar.append(
+        "     Kurulu ayrıştırıcılar: pdfplumber (PDF) · selectolax, lxml "
+        "(HTML/XML) · openpyxl (xlsx) · xlrd (xls) · pyxlsb (xlsb) · odfpy "
+        "(ods). Deneyerek arama, bunlar var. PyPDF2/pypdf/fitz/pdftotext YOK."
+    )
     return "\n".join(satirlar)

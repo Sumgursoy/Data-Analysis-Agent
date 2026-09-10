@@ -97,6 +97,21 @@ SANDBOX_MEMORY = "2g"
 SANDBOX_CPUS = 2.0
 SANDBOX_PIDS_LIMIT = 128
 
+# Kernel ile konuşulan borunun satır tamponu.
+#
+# NEDEN VAR: protokol "satır başına bir JSON" (sandbox/protocol.py) ve kernel
+# bir çalıştırmanın çıktısını 200.000 karakterde kırpıyor
+# (sandbox_image/kernel_server.py: MAX_STREAM_CHARS). Türkçe metinde UTF-8 +
+# JSON escape bunu ~2 katına çıkarıyor → tek satır 400 KB olabiliyor.
+# asyncio'nun varsayılanı ise 64 KB (asyncio.streams._DEFAULT_LIMIT); aşılınca
+# readline() `ValueError: Separator is found, but chunk is longer than limit`
+# fırlatıyor ve run_python sessizce ölüyordu.
+#
+# Düzeltme bilerek SADECE bu tarafta: kernel_server.py'daki tavanı düşürmek
+# imaj rebuild'i gerektirirdi ve build edilmezse eski değer sessizce çalışmaya
+# devam ederdi — PROTOCOL_VERSION koruması bunu yakalamaz (protokol değişmiyor).
+SANDBOX_PIPE_LIMIT = 8 * 1024 * 1024
+
 # Açılışta imajı bir kez çalıştırıp Docker katmanlarını ısıt.
 # Session'dan bağımsız genel bir container havuzu YOK — her container
 # o session'ın klasörlerine bağlı olmak zorunda (gerekçe: sandbox/manager.py).

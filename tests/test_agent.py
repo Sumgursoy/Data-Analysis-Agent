@@ -229,11 +229,42 @@ async def senaryo_4():
         kontrol("trace ucu çalışıyor", r4.status_code == 200 and r4.json()["steps"])
 
 
+async def senaryo_5():
+    """Büyük çıktı boru hattını çökertmemeli.
+
+    GERÇEK HATA (#28): kernel bir çalıştırmanın çıktısını 200.000 karakterde
+    kırpıyor ama backend satırı asyncio'nun varsayılan 64 KB tamponuyla
+    okuyordu. Türkçe metinde UTF-8 + JSON escape ile satır 400 KB'a çıkıyor
+    → `ValueError: Separator is found, but chunk is longer than limit` →
+    run_python sessizce ölüyor ve modele anlamsız bir mesaj gidiyordu.
+    """
+    print("\n=== SENARYO 5: büyük çıktı (boru hattı tamponu) ===")
+    from backend.sandbox.manager import manager
+
+    sid = "agent_s5"
+    config.session_dir(sid)
+    kernel = await manager.get(sid)
+
+    r = await kernel.execute("print('x' * 300_000)")
+    kontrol("300k karakter çökertmiyor", r.ok, f"{r.error_type}: {r.stdout[:120]}")
+    kontrol("çıktı geldi", len(r.stdout) > 100_000, f"{len(r.stdout)} karakter")
+
+    # Türkçe: UTF-8'de çok baytlı, JSON escape ile satır iki katına çıkıyor.
+    r2 = await kernel.execute("print('şğüöçİ' * 42_000)")
+    kontrol("Türkçe büyük çıktı çökertmiyor", r2.ok, str(r2.error_type))
+
+    # En kritik kontrol: kernel hâlâ konuşabiliyor mu?
+    r3 = await kernel.execute("print(6 * 7)")
+    kontrol("kernel büyük çıktıdan sonra ayakta", r3.ok and "42" in r3.stdout,
+            f"ok={r3.ok} stdout={r3.stdout[:80]!r}")
+
+
 async def main():
     await senaryo_1()
     await senaryo_2()
     await senaryo_3()
     await senaryo_4()
+    await senaryo_5()
     from backend.sandbox.manager import manager
     await manager.shutdown()
     print(f"\n{'=' * 62}\nGECTI: {gecti}   BASARISIZ: {basarisiz}")

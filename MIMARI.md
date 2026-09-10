@@ -256,7 +256,7 @@ Data Analysis/
 │   └── analyst.mplstyle        # tek grafik stili
 │
 ├── tests/
-│   ├── run_all.py              # hepsini koştur → 147 kontrol
+│   ├── run_all.py              # hepsini koştur → 176 kontrol
 │   ├── test_*.py               # normalize · ingest · agent · sql · web · export
 │   ├── test_grafik_bicim.py    # AYRI koşar (kernel gerektirir)
 │   ├── smoke_sandbox.py        # AYRI koşar (Docker izolasyon sınırları)
@@ -1357,7 +1357,7 @@ SELECT bolge, COUNT(*) AS n FROM satis GROUP BY 1
 ### Testler
 
 ```bash
-python tests/run_all.py          # 147 kontrol, Docker gerekmez (local kernel)
+python tests/run_all.py          # 176 kontrol, Docker gerekmez (local kernel)
 python tests/smoke_sandbox.py    # Docker izolasyon sınırları — Docker gerekir
 python tests/test_grafik_bicim.py # eksen biçimlendirmesi — kernel gerekir
 ```
@@ -1385,7 +1385,7 @@ python tests/test_grafik_bicim.py # eksen biçimlendirmesi — kernel gerekir
 > kalmıyor. `ATTACH` çok büyük veritabanları için sonradan eklenebilecek bir
 > optimizasyon.
 
-**Durum:** `python tests/run_all.py` → **147 kontrol, hepsi geçiyor.**
+**Durum:** `python tests/run_all.py` → **176 kontrol, hepsi geçiyor.**
 
 ### Demo günü kontrol listesi
 

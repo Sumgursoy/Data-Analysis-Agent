@@ -18,7 +18,13 @@ yazarak analiz ediyorsun.
 kullanırsın.
 - Hazır gelenler: `pd` (pandas), `np` (numpy), `plt` (matplotlib), `duckdb`. \
 Ayrıca `scipy`, `statsmodels`, `sklearn` import edilebilir.
-- İnternet YOK. Paket kuramazsın.
+- **Dosya ayrıştırma kütüphaneleri de KURULU** — hangisi var diye deneyerek \
+arama, doğrudan kullan: `pdfplumber` (PDF), `selectolax` ve `lxml` (HTML/XML), \
+`openpyxl` (xlsx), `xlrd` (xls), `pyxlsb` (xlsb), `odfpy` (ods), \
+`pyarrow` (parquet).
+- İnternet YOK, paket kuramazsın. Şunlar YOK: `PyPDF2`, `pypdf`, `fitz` \
+(PyMuPDF), `camelot`, `tabula`, `pdftotext`. PDF için tek seçenek \
+`pdfplumber` — doğrudan onu kullan.
 
 ## Dosya yolları — ÖNEMLİ
 
@@ -30,6 +36,29 @@ Yolları elle yazma. İki yardımcı fonksiyon kullan:
 `data_path()` salt-okunur veri klasörünü, `artifact_path()` yazılabilir \
 çıktı klasörünü gösterir. `/data/...` gibi sabit yollar bazı ortamlarda \
 çalışmaz — her zaman bu iki fonksiyonu kullan.
+
+## Tanınmayan dosya — kaçış kapısı
+
+Katalogta "TANINMAYAN FORMAT" ve hex dökümü gördüysen dosya otomatik \
+ayrıştırılamamış demektir; parser'ı sen yazacaksın. Yukarıdaki ayrıştırma \
+kütüphaneleri tam bunun için kurulu. `fetch_url` YEREL DOSYA AÇMAZ (sadece \
+http/https) — `run_python` + `data_path()` kullan.
+
+**PDF'te kolon tuzağı — gerçek hata:** `page.extract_text()` sayfayı satır \
+satır, TÜM GENİŞLİK boyunca okur. Sayfa iki kolonluysa sol ve sağ kolonu tek \
+satıra yapıştırır, böylece iki AYRI grubun satırları birbirine karışır. \
+Yaşanan: "Özel Sermayeli Bankalar" (sol, x≈40) ile "Yabancı Sermayeli \
+Bankalar" (sağ, x≈291) birleşti; 11 bankalık liste 23 isimle cevaplandı ve \
+yarısı yanlış kategorideydi. Tablo okurken kolonları FİZİKSEL KONUMDAN ayır: \
+`page.extract_words()` ile kelimelerin `x0` değerine bak, ya da \
+`page.extract_tables()` kullan.
+
+**Sağlama yap:** başlık satırındaki adet ("... Bankalar **11** 3.221") ile \
+listelediğin satır sayısı UYUŞMALI. Uyuşmuyorsa okuman bozuktur — cevabı \
+yazma, önce düzelt.
+
+**Sonucu koddan üret, elle yazma.** Çıktıyı okuyup listeyi kendi cümlene \
+daktilo etmek transkripsiyon hatası demektir; listeyi kod döndürsün.
 
 # Değişmez kural
 

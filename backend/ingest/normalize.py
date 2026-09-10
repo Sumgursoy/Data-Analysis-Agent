@@ -21,6 +21,8 @@ import unicodedata
 import numpy as np
 import pandas as pd
 
+from backend import config
+
 log = logging.getLogger(__name__)
 
 # ── Kolon adları ────────────────────────────────────────────────
@@ -84,11 +86,24 @@ _TEMIZLE = re.compile(r"[₺$€£]|\bTL\b|\bTRY\b|\s| ", re.IGNORECASE)
 _MUHASEBE_NEG = re.compile(r"^\((.*)\)$")
 _SAYI_GOVDE = re.compile(r"^-?[\d.,]+$")
 
+# İki rakam grubunu ayıran İÇSEL boşluk: "04 152.758", "69.354 83.4".
+# PDF'te kolon ayrımı bir sayının ortasından geçtiğinde tam olarak bu oluşuyor.
+_ICSEL_BOSLUK = re.compile(r"\d[\s ]+\d")
+
 BOS_DEGERLER = {"", "-", "—", "–", "n/a", "na", "null", "none", "nan", "#yok", "yok"}
 
 
 def _tek_sayi(ham: str, ondalik: str) -> float | None:
     """Tek bir metni verilen ondalık ayıraca göre sayıya çevirir."""
+    # GERÇEK HATA (#31): _TEMIZLE tüm boşlukları siliyordu, yani "04 152.758"
+    # → "04152.758" → 4.152.758 oluyordu. UYDURMA sayı: gerçek değer 152.758.
+    # Program patlamıyor, kolon `int` görünüyor, şema kartı makul duruyor —
+    # sadece rakamlar yanlış. Türkçede binlik ayıracı NOKTA'dır; rakam
+    # gruplarını ayıran içsel boşluk her hâlükârda belirsizdir.
+    # Belirsizi sayıya çevirme: metin bırak, görünür kalsın.
+    if _ICSEL_BOSLUK.search(ham):
+        return None
+
     s = _TEMIZLE.sub("", ham)
     if s.lower() in BOS_DEGERLER:
         return None
@@ -317,3 +332,70 @@ def bos_degerleri_temizle(df: pd.DataFrame) -> pd.DataFrame:
         if pd.api.types.is_object_dtype(s) or pd.api.types.is_string_dtype(s):
             df[kolon] = s.map(temizle)
     return df
+
+
+# ── Başlık satırı ───────────────────────────────────────────────
+#
+# Ham bir ızgaranın (Excel sheet'i, PDF tablosu) hangi satırının kolon adı
+# taşıdığını bulur. Kurumsal dosyalarda ilk satırlar logo/başlık/açıklama
+# olur; koşulsuz `ilk satır = başlık` varsaymak kolon adlarını çöpe çevirir.
+#
+# Önce excel.py'daydı; PDF adaptörü de aynı işi yaptığı için buraya taşındı.
+# Sözleşme modülü (adapters/base.py) yerine burası seçildi: iş zaten bu
+# modülün tanımına giriyor ("kolon adı normalizasyonu") ve base.py'ı import
+# eden her adaptöre heuristik yükü binmiyor.
+
+# Sayı gövdesi + Excel/PDF'te sık görülen süsler (boşluk, parantez, %, para).
+# normalize._SAYI_GOVDE bilerek daha dar; ikisi BİRLEŞTİRİLMEMELİ, yoksa
+# başlık tespitinin davranışı sessizce değişir.
+_SAYI_KALIBI = re.compile(r"^-?[\d\s.,()%₺$€]+$")
+
+
+def sayi_gibi(deger: object) -> bool:
+    """Hücre bir sayıyı mı gösteriyor? (Tip değil, GÖRÜNÜM sorusu.)"""
+    if deger is None or (isinstance(deger, float) and pd.isna(deger)):
+        return False
+    return bool(_SAYI_KALIBI.match(str(deger).strip())) and any(
+        ch.isdigit() for ch in str(deger)
+    )
+
+
+def _baslik_puani(df: pd.DataFrame, r: int) -> float:
+    """Bir satırın başlık satırı olma puanı.
+
+    Başlık satırı: dolu, metinsel, değerleri birbirinden farklı —
+    ve ALTINDAKİ satırlardan tip olarak ayrışıyor (altı sayısal olur).
+    """
+    satir = df.iloc[r]
+    dolu = satir.dropna()
+    genislik = max(len(satir), 1)
+
+    doluluk = len(dolu) / genislik
+    if doluluk < 0.5 or len(dolu) < 2:
+        return -1.0
+
+    metinsellik = sum(1 for v in dolu if not sayi_gibi(v)) / len(dolu)
+    benzersiz = len({str(v).strip().lower() for v in dolu}) / len(dolu)
+
+    alt = df.iloc[r + 1 : r + 11]
+    alt_sayisallik = 0.0
+    if not alt.empty:
+        hucreler = [v for _, s in alt.items() for v in s.dropna()]
+        if hucreler:
+            alt_sayisallik = sum(1 for v in hucreler if sayi_gibi(v)) / len(hucreler)
+
+    # Başlık metinsel, altı sayısal → aradaki fark en güçlü sinyal
+    ayrisma = metinsellik - (1 - alt_sayisallik)
+
+    return doluluk * 3 + metinsellik * 2 + benzersiz * 2 + ayrisma * 2
+
+
+def find_header_row(df: pd.DataFrame) -> int:
+    """Başlık satırının indeksi. Bulunamazsa 0."""
+    tarama = min(config.HEADER_SCAN_ROWS, len(df))
+    en_iyi, en_iyi_puan = 0, -1.0
+    for r in range(tarama):
+        puan = _baslik_puani(df, r)
+        if puan > en_iyi_puan:
+            en_iyi, en_iyi_puan = r, puan
+    return en_iyi if en_iyi_puan > 0 else 0

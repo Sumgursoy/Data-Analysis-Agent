@@ -38,7 +38,7 @@
 | Backend + sandbox imajı | 42 Python dosyası, ~6.100 satır |
 | Testler | 9 dosya, ~1.350 satır |
 | Frontend | `frontend/src` altında 7 dosya, ~1.000 satır |
-| Otomatik kontrol | **147, hepsi geçiyor** (`python tests/run_all.py`) |
+| Otomatik kontrol | **176, hepsi geçiyor** (`python tests/run_all.py`) |
 | Tamamlanan faz | 1, 2, 3, 4, 5, 6, 7 — **hepsi** |
 | Canlı doğrulama | Gerçek modelle uçtan uca çalıştırıldı, 4-5 adım / 8-21 sn |
 
@@ -281,7 +281,7 @@ korumalı.
 **Testler `tests/` altına toplandı**, tek komutla koşuyor:
 
 ```
-python tests/run_all.py     →  147 kontrol
+python tests/run_all.py     →  176 kontrol
 ```
 
 ---
@@ -345,6 +345,10 @@ rapor yanlış çıkıyor ve kimse anlamıyor.
 | 11 | İlişki bloğu ilgisiz şema kartlarına da yazılıyordu | Model alakasız join'lere itiliyordu. |
 | 13 | Boş metin (`""`) NaN'a çevrilmiyordu | `if v` koşulu boş metni listeden eliyordu. PDF/HTML çıkarımında hücreler `""` gelir; "tamamen boş satır" tespiti çalışmayınca tabloya **hayalet satırlar** sızıyordu. |
 | 15 | Yabancı anahtara çeyreklik (medyan) gösteriliyordu | `musteri_no` için `p50 10.121` yazıyordu — müşteri numarasının medyanı anlamsız. Tekillik oranı düşük olduğu için kimlik sayılmıyordu (6.000 siparişte 240 müşteri). Artık kolon adı da sinyal: `240 uniq (%4 tekil ← yabancı anahtar adayı)`. |
+| 29 | **PDF strateji seçimi "ilk çalışan kazanır"dı** | `_sayfadan_tablolar` iki stratejiyi SIRAYLA deneyip ilk sonuç üreteni `return` ediyordu; `MIN_SATIR=2` olduğu için **3 satır** eşiği geçiyordu. Gerçek PDF'te çizgi stratejisi 21 satırlık bir tabloyu 6 hücreye tıkıştırıp 3 satır döndürdü — tek hücrenin içinde `'Sektör Toplamı\nMevduat Bankaları\n… (21 banka)'`. Eşiği geçtiği için 46 satırlık doğru okuma **hiç denenmedi**. Ölçüm: 5 sayfada çizgi kazanıyordu (3×6, 3×6, 3×22, 3×22, 3×7), doğrusu 46/84/34/50/133 satırdı. Mimari **"üret → ele → puanla → seç"** olarak değişti. Aynı rewrite bir eksiği daha kapattı: **kalite kapısı yoktu**, içindekiler sayfası ve grafik eksen etiketleri kataloğa giriyordu. Ayırt edici ölçüldü — çöp sayfalarda **0** sayısal kolon, gerçek tablolarda **4-21**. |
+| 30 | **PDF başlık satırı koşulsuz `tablo[0]`du** | Metin stratejisinde sayfa başlığı tüm genişliğe yayıldığı için başlık satırı oluyordu. Gerçek veri tablosunun kolon adları şöyle çıkmıştı: `tablo_1_a · ralik_202 · c5_itibariyla · banka_su · be_ve · calisa` — *"Tablo 1 Aralık 2025 İtibarıyla Banka, Şube ve Çalışan Sayıları"* başlığının karakter sınırlarından parçalanmış hâli. `excel.py`'daki `find_header_row` (zaten vardı) `normalize.py`'a taşınıp PDF'ten de çağrıldı; 6 tablo sayfasının **6'sında da** doğru satırı buldu. Üstüne kelime geometrisiyle onarım eklendi (`extract_words` + kolon bbox): `'Banka Erke','k Kad','ın Topl'` → `Banka Erkek, Kadın, Toplam`. |
+| 31 | **İçsel boşluk uydurma sayı üretiyordu** | `_TEMIZLE` regex'i **tüm** boşlukları siliyordu: `"04 152.758"` → `"04152.758"` → **4.152.758**. Gerçek değer 152.758. Program patlamıyor, kolon `int` görünüyor, şema kartı makul duruyor — sadece rakamlar yanlış. PDF'te kolon ayrımı bir sayının ortasından geçtiğinde tam olarak bu oluşuyor (`"69.354 83.4"` → 69.354.834). Türkçede binlik ayıracı **nokta**dır; rakam gruplarını ayıran içsel boşluk her hâlükârda belirsiz. Artık belirsiz olan sayıya çevrilmiyor, **metin bırakılıyor** — görünür şekilde bozuk, sessizce yanlış değil. Bu düzeltme PDF'e özel değil, her kaynağı korur. |
+| 32 | Çok sayfalı tablo ikiye bölünüyordu | Kurumsal tablolar sayfaya sığmayınca devam eder; agent yarım tablo üstünde hesap yapıyordu (TBB'de Tablo 2 = s7+s8, Tablo 3 = s9+s10). Kolon **sayısı** imza olamıyor — aynı tablonun iki sayfası 15 ve 16 kolon çıkıyor. Fiziksel **x kenarları** ise eşleşiyor: ölçülen s7↔s8 = **0,94**, s9↔s10 = **0,87**, buna karşılık s8↔s9 = 0,26 ve s10↔s11 = 0,05. Eşik 0,70 (pay 3,3 kat). Üç şart **birden** aranıyor — ardışıklık ∧ imza ∧ kolon farkı ≤ 2; ardışıklık şart, çünkü uzak sayfalar kurumsal şablon yüzünden tesadüfen eşleşip veri uydurabilir. |
 
 ### B. Altyapı — "çalışıyor sanıyordun, çalışmıyordu"
 
@@ -358,6 +362,7 @@ rapor yanlış çıkıyor ve kimse anlamıyor.
 | 20 | **`uvicorn --reload` Windows'ta sandbox'ı tamamen öldürüyordu** | `--reload` → uvicorn `SelectorEventLoop` seçiyor, o loop alt süreç açamıyor. Sandbox'ın tamamı alt sürece dayandığı için docker/local kernel ve prewarm `NotImplementedError` ile ölüyordu. Üstelik `str(e)` **boş** olduğundan hata mesajı hiçbir şey söylemiyordu. `main.py`'ın kendi docstring'i `--reload` öneriyordu — yani belgelenmiş kullanım bozuktu. Çözüm: `run_dev.py`. |
 | 21 | prewarm bir optimizasyonken açılışı çökertiyordu | `except` listesinde `NotImplementedError` yoktu; ısıtma başarısız olunca uygulama hiç kalkmıyordu. **Optimizasyon asla açılışı düşürmemeli.** |
 | 23 | `catalog.json` atomik yazımı OneDrive'da patlıyordu | `os.replace` Windows'ta dosya başka süreçte açıksa `PermissionError` veriyor. Proje OneDrive klasöründe; testte gerçekten oldu ve isteği 500'e düşürdü. Kısa aralıklı 5 deneme eklendi. |
+| 28 | **64 KB üstü çıktı `run_python`'ı çökertiyordu** | Kernel bir çalıştırmanın çıktısını 200.000 karakterde kırpıyor (`kernel_server.py: MAX_STREAM_CHARS`) ama backend satırı asyncio'nun **varsayılan 64 KB** tamponuyla okuyordu — `create_subprocess_exec`'e `limit=` hiç geçilmemişti. Türkçe metinde UTF-8 + JSON escape ile satır **400 KB**'a çıkıyor, yani tavanı **6,1 kat** aşıyor. Sonuç: `ValueError: Separator is found, but chunk is longer than limit`. Üç kat kötüydü: (a) `except` listesinde yoktu, `dispatch()`'in genel yakalayıcısına düşüyordu; (b) modele giden mesaj ham asyncio metniydi, model bundan "çıktımı kısaltmalıyım" sonucunu çıkaramayıp aynı kodu tekrar denedi; (c) timeout ve çökme yollarında `restart()` varken burada yoktu. Düzeltme **bilerek sadece backend tarafında** (`SANDBOX_PIPE_LIMIT = 8 MB` + `ValueError` yakalama + eyleme dönük mesaj): `kernel_server.py`'daki tavanı düşürmek imaj rebuild'i gerektirirdi, build edilmezse eski değer sessizce çalışmaya devam ederdi ve `PROTOCOL_VERSION` koruması bunu **yakalamaz** (protokol değişmiyor) — bkz. hata #12. |
 
 ### C. Model davranışı — "doğru kod, yanlış cümle"
 
@@ -479,13 +484,14 @@ python tests/run_all.py
 
 | Test | Kontrol | Kapsam |
 |---|---|---|
-| `test_normalize` | 25 | Türkçe sayı/tarih/kolon adı, `İ.lower()` tuzağı |
+| `test_normalize` | 32 | Türkçe sayı/tarih/kolon adı, `İ.lower()` tuzağı, bölünmüş sayı (#31) |
 | `test_ingest` | uçtan uca | Bozuk Excel, cp1254 CSV, tanınmayan dosya |
-| `test_agent` | 31 | Döngü, hata düzeltme, kernel restart, SSE, trace |
+| `test_agent` | 35 | Döngü, hata düzeltme, kernel restart, SSE, trace, büyük çıktı (#28) |
 | `test_sql` | 36 | SQL güvenliği, veritabanı ingest, DSN sızıntısı |
 | `test_web` | 29 | SSRF, robots, DOM haritası, tablo çıkarma |
 | `test_export_sources` | 26 | Örnek veri, notebook export, PDF, ZIP güvenliği |
-| **Toplam** | **147** | son çalıştırmada hepsi geçti |
+| `test_pdf_kalite` | 18 | PDF kalite kapısı (#29), başlık tespiti (#30), sayfa birleştirme (#32), metin kanalı |
+| **Toplam** | **176** | son çalıştırmada hepsi geçti |
 
 Bu testler `SANDBOX_BACKEND=local` ile koşuyor, yani **Docker gerekmiyor** —
 hızlı geri bildirim için bilinçli tercih.

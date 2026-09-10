@@ -70,8 +70,19 @@ def dogrula(url: str) -> str:
     ayristirilmis = urlparse(url)
 
     if ayristirilmis.scheme not in ("http", "https"):
+        # Modele giden mesaj EYLEME DÖNÜK olmalı (aynı gerekçe: sandbox/base.py
+        # boru tamponu hatası). GERÇEK TUR: agent yerel bir PDF'i `file://` ile
+        # açmaya çalıştı, sadece kısıtı bildiren bu mesajı aldı ve dosya elinin
+        # altındayken tekrar okumayı denemeden 3 adımda pes etti.
+        ek = (
+            " Yerel dosyayı fetch_url ile açamazsın — run_python içinde "
+            "data_path('dosya_adi') ile oku."
+            if ayristirilmis.scheme == "file"
+            else ""
+        )
         raise FetchError(
-            f"Sadece http/https destekleniyor (gelen: {ayristirilmis.scheme or 'yok'})."
+            f"fetch_url sadece http/https adreslerini açar "
+            f"(gelen: {ayristirilmis.scheme or 'yok'}).{ek}"
         )
     if not ayristirilmis.hostname:
         raise FetchError("URL'de alan adı yok.")

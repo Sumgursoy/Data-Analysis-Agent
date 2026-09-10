@@ -16,6 +16,7 @@ import logging
 import os
 import sys
 
+from backend import config
 from backend.sandbox.base import KERNEL_SCRIPT, PipeKernel
 
 log = logging.getLogger(__name__)
@@ -50,4 +51,6 @@ class LocalKernel(PipeKernel):
             stderr=asyncio.subprocess.PIPE,
             cwd=str(self.data_dir),
             env=env,
+            # Varsayılan 64 KB, kernel'ın üretebileceğinin çok altında (config).
+            limit=config.SANDBOX_PIPE_LIMIT,
         )

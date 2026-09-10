@@ -32,6 +32,7 @@ TESTLER = [
     ("sql", "test_sql.py", "SQL güvenliği, veritabanı ingest"),
     ("web", "test_web.py", "SSRF, robots, DOM haritası"),
     ("export", "test_export_sources.py", "Örnek veri, notebook, PDF, ZIP"),
+    ("pdf", "test_pdf_kalite.py", "PDF kalite kapısı, başlık tespiti, metin kanalı"),
 ]
 
 
